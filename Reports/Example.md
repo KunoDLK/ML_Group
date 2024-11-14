@@ -37,8 +37,8 @@ The dataset can be found [here](https://www.kaggle.com/datasets/dgomonov/new-yor
 
 ### Data Visualisation:
 
-<p float="left">
-  <img src="Images/ManhattanMap.png" width="200" />
-  <img src="../Scripts/Price In Manhattan/plot.png" width="450" /> 
-</p>
+<div style="display: flex;">
+  <img src="Images/ManhattanMap.png" style="width: 50%; height: auto;"/>
+  <img src="Images/DataByLocation.png" style="width: 50%; height: auto"/>
+</div>
 
