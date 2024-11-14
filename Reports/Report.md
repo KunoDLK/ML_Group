@@ -64,3 +64,5 @@ train_indices <- sample(seq_len(nrow(AirbnbData)), size = 0.7 * nrow(AirbnbData)
 training <- AirbnbData[train_indices, ]
 testing <- AirbnbData[-train_indices, ]
 ```
+
+This has separated our data in to 34226 row for training and 14669 rows for testing 
