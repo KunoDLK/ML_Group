@@ -21,8 +21,8 @@ testing_full <- AirbnbData[-train_indices, ]
 # Create Train and Test subsets
 set.seed(25)
 
-training_small <- data[sample(seq_len(nrow(data)), size = 700), ]
-testing_small <- data[sample(seq_len(nrow(data)), size = 300), ]
+training_small <- AirbnbData[sample(seq_len(nrow(AirbnbData)), size = 700), ]
+testing_small <- AirbnbData[sample(seq_len(nrow(AirbnbData)), size = 300), ]
 
 # ===============================================================================
 
