@@ -37,8 +37,30 @@ The dataset can be found [here](https://www.kaggle.com/datasets/dgomonov/new-yor
 
 ### Data Visualisation:
 
+Here is a sample of the data filtered by Manhattan plotted base on location and coloured by price. As you can see the data lines up with the map correctly and is very dense. This is most likely due to the dense population and the high amount of tourism in Manhattan and new york as a whole
+
 <div style="display: flex;">
   <img src="Images/ManhattanMap.png" style="width: 50%; height: auto;"/>
   <img src="Images/DataByLocation.png" style="width: 50%; height: auto"/>
 </div>
 
+<div style="page-break-after: always;"></div>
+
+## Model Aims:
+For our group project we want to create a prediction model that will predict the price of a give property. These will be regression models and we will explore 3 different approaches and evaluate the accuracy of each.
+
+To ensure each model is comparable we will be using the same seed for separating our data into training and testing subsets with 70% our data used for training and the remaining 30% for evaluating the model. 
+
+Here is the script we use to load and separate our data, we use random separation to protect against there being changes in the data overtime:
+
+```R
+# Import CSV file
+AirbnbData <- read.csv("DataSet/AB_NYC_2019.csv")
+
+# Create Train and Test subsets
+set.seed(25)
+train_indices <- sample(seq_len(nrow(AirbnbData)), size = 0.7 * nrow(AirbnbData))
+
+training <- AirbnbData[train_indices, ]
+testing <- AirbnbData[-train_indices, ]
+```
