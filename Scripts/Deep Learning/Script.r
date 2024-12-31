@@ -40,23 +40,19 @@ testing <- testing_small
 
 # ======================== Install Any Required Packages ========================
 
-#install.packages("caret")
-#install.packages("keras")
+#install.packages("deepnet")
 #install.packages("ggplot2")
 #library(keras)
-
-# Install TensorFlow
 #keras::install_keras()
-
 
 # ===============================================================================
 
 
 # Load libraries
-library(caret)
 library(keras)
+library(deepnet)
+library(caret)
 library(ggplot2)
-
 
 # ================================ Format The Data ==============================
 
@@ -93,55 +89,38 @@ print(str(testing_set))
 
 # ================================ Deep Learning ==============================
 
-# Ensure that all categorical variables are numeric
-dummyVars <- dummyVars(~ ., data = training_set)
-training_matrix <- as.matrix(predict(dummyVars, newdata = training_set))
-testing_matrix <- as.matrix(predict(dummyVars, newdata = testing_set))
+# Define model architecture using Keras
 
-# Normalize numerical features
-preProcess_scale <- preProcess(training_matrix, method = c("center", "scale"))
-training_matrix <- predict(preProcess_scale, newdata = training_matrix)
-testing_matrix <- predict(preProcess_scale, newdata = testing_matrix)
 
-# Define the model
 model <- keras_model_sequential() %>%
-  layer_dense(units = 128, activation = 'relu', input_shape = ncol(training_matrix) - 1) %>%
-  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 128, activation = 'relu', input_shape = dim(training_scaled)[2]) %>%
+  dropout(rate = 0.3) %>%
   layer_dense(units = 64, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
+  dropout(rate = 0.3) %>%
   layer_dense(units = 1)
 
 model %>% compile(
-  loss = 'mse',
-  optimizer = optimizer_adam(),
+  loss = 'mean_squared_error',
+  optimizer = Adam(),
   metrics = c('mae')
 )
 
 # Train the model
-history <- model %>% fit(
-  x = training_matrix[, -ncol(training_matrix)],
-  y = training_matrix[, ncol(training_matrix)],
-  epochs = 50,
-  batch_size = 32,
-  validation_split = 0.2,
-  verbose = 1
-)
+history <- model %>% fit(training_scaled, training_set[, target], epochs = 50, batch_size = 32,
+                         validation_split = 0.1)
 
-# Make predictions
-predictions <- model %>% predict(testing_matrix[, -ncol(testing_matrix)])
+# Make predictions and evaluate performance
+predictions <- predict(model, testing_scaled)
+rmse <- sqrt(mean((testing_set[[target]] - predictions)^2))
+mae <- mean(abs(testing_set[[target]] - predictions))
 
-# Add predictions to testing set for comparison
-testing_set$predicted_price <- predictions
+print(paste("RMSE:", rmse))
+print(paste("MAE:", mae))
 
-# Plot real vs. predicted
-ggplot(testing_set, aes(x = price, y = predicted_price)) +
-  geom_point(alpha = 0.5) +
-  geom_abline(intercept = 0, slope = 1, color = 'red', linetype = 'dashed') +
-  theme_minimal() +
-  labs(
-    title = 'Actual vs Predicted Airbnb Prices',
-    x = 'Actual Price',
-    y = 'Predicted Price'
-  )
+# Plot actual vs predicted values
+ggplot(data.frame(actual = testing_set[[target]], predicted = as.vector(predictions)), aes(x = actual, y = predicted)) +
+  geom_point() +
+  geom_line(aes(y = x), color = "red") + 
+  ggtitle("Actual vs Predicted Prices")
+
 # ===============================================================================
-
