@@ -40,10 +40,7 @@ testing <- testing_small
 
 # ======================== Install Any Required Packages ========================
 
-#install.packages("deepnet")
-#install.packages("ggplot2")
-#library(keras)
-#keras::install_keras()
+#install.packages("caret")
 
 # ===============================================================================
 
@@ -52,14 +49,13 @@ testing <- testing_small
 library(keras)
 library(deepnet)
 library(caret)
-library(ggplot2)
 
 # ================================ Format The Data ==============================
 
 
 # Select only necessary columns
 features <- c("latitude", "longitude", "neighbourhood_group", "neighbourhood",
-              "room_type", "minimum_nights")
+              "room_type")
 
 training_set <- training[, c(features, "price")]
 testing_set <- testing[, c(features, "price")]
@@ -87,40 +83,89 @@ print(str(testing_set))
 
 # ===============================================================================
 
-# ================================ Deep Learning ==============================
 
-# Define model architecture using Keras
+# ================================ Normalize Latitude and Longitude ==============================
+
+# Offset by minimum and normalize using range.
+min_latitude <- min(training_set$latitude)
+min_longitude <- min(training_set$longitude)
+
+training_set$latitude <- training_set$latitude - min_latitude
+training_set$longitude <- training_set$longitude - min_longitude
+
+testing_set$latitude <- testing_set$latitude - min_latitude
+testing_set$longitude <- testing_set$longitude - min_longitude
+
+# Normalize to a range of [0, 1]
+lat_range <- max(training_set$latitude) - min(training_set$latitude)
+long_range <- max(training_set$longitude) - min(training_set$longitude)
+
+training_set$latitude <- training_set$latitude / lat_range
+training_set$longitude <- training_set$longitude / long_range
+
+testing_set$latitude <- testing_set$latitude / lat_range
+testing_set$longitude <- testing_set$longitude / long_range
+
+training_set$latitude <- training_set$latitude * 1000
+training_set$longitude <- training_set$longitude * 1000
+
+testing_set$latitude <- testing_set$latitude * 1000
+testing_set$longitude <- testing_set$longitude * 1000
+
+print(dim(training_set))
+print(str(training_set))
+print(dim(testing_set))
+print(str(testing_set))
+# =================================================================================================
+
+# ================================ One-Hot Encoding ================================================
 
 
+# =================================================================================================
+
+# ================================ Define the Model ===============================================
+library(keras)
+
+# Define the neural network model
 model <- keras_model_sequential() %>%
-  layer_dense(units = 128, activation = 'relu', input_shape = dim(training_scaled)[2]) %>%
-  dropout(rate = 0.3) %>%
-  layer_dense(units = 64, activation = 'relu') %>%
-  dropout(rate = 0.3) %>%
-  layer_dense(units = 1)
+  layer_dense(units = 64, activation = 'relu', input_shape = ncol(training_set) - 1) %>%
+  layer_dropout(rate = 0.4) %>%
+  layer_dense(units = 32, activation = 'relu') %>%
+  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 1, activation = 'linear')
 
+# =================================================================================================
+
+# ================================ Compile the Model ==============================================
 model %>% compile(
   loss = 'mean_squared_error',
-  optimizer = Adam(),
-  metrics = c('mae')
+  optimizer = 'adam',
+  metrics = c('mean_absolute_error')
 )
 
-# Train the model
-history <- model %>% fit(training_scaled, training_set[, target], epochs = 50, batch_size = 32,
-                         validation_split = 0.1)
+# =================================================================================================
 
-# Make predictions and evaluate performance
-predictions <- predict(model, testing_scaled)
-rmse <- sqrt(mean((testing_set[[target]] - predictions)^2))
-mae <- mean(abs(testing_set[[target]] - predictions))
+# ================================ Train the Model ================================================
+history <- model %>% fit(
+  x = as.matrix(training_set[, -ncol(training_set)]),
+  y = training_set$price,
+  epochs = 50, 
+  batch_size = 32, 
+  validation_split = 0.2
+)
 
-print(paste("RMSE:", rmse))
-print(paste("MAE:", mae))
+# =================================================================================================
 
-# Plot actual vs predicted values
-ggplot(data.frame(actual = testing_set[[target]], predicted = as.vector(predictions)), aes(x = actual, y = predicted)) +
-  geom_point() +
-  geom_line(aes(y = x), color = "red") + 
-  ggtitle("Actual vs Predicted Prices")
+# ================================ Evaluate the Model =============================================
+model %>% evaluate(as.matrix(testing_set[, -ncol(testing_set)]), testing_set$price)
 
-# ===============================================================================
+# =================================================================================================
+
+# ================================ Visualize Training History =====================================
+library(ggplot2)
+
+plot(history) +
+  ggtitle("Model Training History") +
+  theme_minimal()
+
+# =================================================================================================
