@@ -3,6 +3,26 @@
 # Import CSV file
 AirbnbData <- read.csv("DataSet/AB_NYC_2019.csv")
 
+str(AirbnbData)
+
+# Load necessary library
+library(dplyr)
+
+# Determine the most popular room type
+most_popular_room_type <- AirbnbData %>%
+  group_by(room_type) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  slice(1) %>%
+  pull(room_type)
+
+# Filter the data by the most popular room type
+AirbnbData <- AirbnbData %>%
+  filter(room_type == most_popular_room_type)
+
+# Display the structure of the filtered data
+str(AirbnbData)
+
 # ===============================================================================
 
 # ================== This is for running on whole dataset =======================
@@ -29,12 +49,12 @@ testing_small <- AirbnbData[sample(seq_len(nrow(AirbnbData)), size = 300), ]
 # ============================ Set the datasets to use  =========================
 
 # uncomment for small
-training <- training_small
-testing <- testing_small
+#training <- training_small
+#testing <- testing_small
 
 # uncomment for full
-# training <- training_full
-# testing <- testing_full
+training <- training_full
+testing <- testing_full
 
 # ===============================================================================
 
@@ -54,8 +74,7 @@ library(caret)
 
 
 # Select only necessary columns
-features <- c("latitude", "longitude", "neighbourhood_group", "neighbourhood",
-              "room_type")
+features <- c("latitude", "longitude")
 
 training_set <- training[, c(features, "price")]
 testing_set <- testing[, c(features, "price")]
@@ -63,16 +82,6 @@ testing_set <- testing[, c(features, "price")]
 # Check and handle missing values
 training_set <- na.omit(training_set)
 testing_set <- na.omit(testing_set)
-
-# Ensure consistent factor levels between training and testing sets
-training_set$neighbourhood <- factor(training_set$neighbourhood)
-testing_set$neighbourhood <- factor(testing_set$neighbourhood, levels = levels(training_set$neighbourhood))
-
-training_set$room_type <- factor(training_set$room_type)
-testing_set$room_type <- factor(testing_set$room_type, levels = levels(training_set$room_type))
-
-training_set$neighbourhood_group <- factor(training_set$neighbourhood_group)
-testing_set$neighbourhood_group <- factor(testing_set$neighbourhood_group, levels = levels(training_set$neighbourhood_group))
 
 # Verify the dimensions and structure after cleanup
 
@@ -106,11 +115,6 @@ training_set$longitude <- training_set$longitude / long_range
 testing_set$latitude <- testing_set$latitude / lat_range
 testing_set$longitude <- testing_set$longitude / long_range
 
-training_set$latitude <- training_set$latitude * 1000
-training_set$longitude <- training_set$longitude * 1000
-
-testing_set$latitude <- testing_set$latitude * 1000
-testing_set$longitude <- testing_set$longitude * 1000
 
 print(dim(training_set))
 print(str(training_set))
@@ -118,54 +122,110 @@ print(dim(testing_set))
 print(str(testing_set))
 # =================================================================================================
 
-# ================================ One-Hot Encoding ================================================
+# ================================ Encoding ================================================
+
+library(keras)
 
 
+# Normalizing numerical variables
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+training_set$latitude <- normalize(training_set$latitude)
+training_set$longitude <- normalize(training_set$longitude)
+testing_set$latitude <- normalize(testing_set$latitude)
+testing_set$longitude <- normalize(testing_set$longitude)
+
+# Normalize target variable with the same method
+price_min <- min(training_set$price)
+price_max <- max(training_set$price)
+
+# Normalize the price based on the training set min/max
+training_set$price <- (training_set$price - price_min) / (price_max - price_min)
+testing_set$price <- (testing_set$price - price_min) / (price_max - price_min)
+
+print(dim(training_set))
+print(str(training_set))
+print(dim(testing_set))
+print(str(testing_set))
 # =================================================================================================
 
 # ================================ Define the Model ===============================================
+
+# Load necessary libraries
 library(keras)
 
 # Define the neural network model
 model <- keras_model_sequential() %>%
-  layer_dense(units = 64, activation = 'relu', input_shape = ncol(training_set) - 1) %>%
-  layer_dropout(rate = 0.4) %>%
+  # Add layers to the model
+  layer_dense(units = 32, activation = 'relu', input_shape = c(2)) %>%
   layer_dense(units = 32, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
-  layer_dense(units = 1, activation = 'linear')
+  layer_dense(units = 16, activation = 'relu') %>%
+  layer_dense(units = 1)
 
-# =================================================================================================
-
-# ================================ Compile the Model ==============================================
+# Compile the model
 model %>% compile(
   loss = 'mean_squared_error',
-  optimizer = 'adam',
+  optimizer = optimizer_adam(),
   metrics = c('mean_absolute_error')
 )
 
-# =================================================================================================
-
-# ================================ Train the Model ================================================
+# Fit the model to the training data
 history <- model %>% fit(
-  x = as.matrix(training_set[, -ncol(training_set)]),
-  y = training_set$price,
-  epochs = 50, 
-  batch_size = 32, 
-  validation_split = 0.2
+  as.matrix(training_set[, c("latitude", "longitude")]), # input features
+  training_set$price,                                  # target variable
+  epochs = 50,
+  batch_size = 32,
+  validation_split = 0.1
 )
 
-# =================================================================================================
+# Evaluate the model's performance on the testing data
+evaluation <- model %>% evaluate(
+  as.matrix(testing_set[, c("latitude", "longitude")]),
+  testing_set$price
+)
 
-# ================================ Evaluate the Model =============================================
-model %>% evaluate(as.matrix(testing_set[, -ncol(testing_set)]), testing_set$price)
+# Print the evaluation result
+print(evaluation)
 
-# =================================================================================================
+# You can predict the testing set using the trained model
+predictions <- model %>% predict(as.matrix(testing_set[, c("latitude", "longitude")]))
 
-# ================================ Visualize Training History =====================================
+# Load necessary library for plotting
 library(ggplot2)
 
-plot(history) +
-  ggtitle("Model Training History") +
+# Predictions need to be denormalized to match original price scale
+denormalized_predictions <- predictions * (price_max - price_min) + price_min
+denormalized_test_values <- testing_set$price * (price_max - price_min) + price_min
+
+# Calculate the absolute errors
+absolute_errors <- abs(denormalized_predictions - denormalized_test_values)
+
+head(denormalized_predictions)
+head(denormalized_test_values)
+head(absolute_errors)
+
+# Calculate minimum, maximum, and average absolute error
+min_error <- min(absolute_errors)
+max_error <- max(absolute_errors)
+avg_error <- median(absolute_errors)
+
+# Print the error statistics
+cat("Minimum Absolute Error:", min_error, "\n")
+cat("Maximum Absolute Error:", max_error, "\n")
+cat("Median Absolute Error:", avg_error, "\n")
+
+# Create a data frame for plotting
+error_data <- data.frame(Actual_Price = denormalized_test_values,
+                         Predictions = denormalized_predictions, 
+                         Absolute_Error = absolute_errors)
+
+# Plot the absolute errors
+ggplot(error_data, aes(x = seq_along(Absolute_Error), y = Absolute_Error)) +
+  geom_line(color = "blue") +
+  labs(title = "Test Set Absolute Errors",
+       x = "Test Sample Index",
+       y = "Absolute Error") +
   theme_minimal()
 
-# =================================================================================================
