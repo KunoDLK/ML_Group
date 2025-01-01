@@ -3,7 +3,7 @@ library(dplyr)
 library(caret)  
 library(ggplot2)
 
-data <- read.csv("/Users/chopelletto/Desktop/Opera Downloads/ML_Group-main/DataSet/AB_NYC_2019.csv")
+data <- read.csv("DataSet/AB_NYC_2019.csv")
 
 
 data$neighbourhood <- as.factor(data$neighbourhood)
