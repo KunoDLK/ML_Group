@@ -161,13 +161,14 @@ model <- keras_model_sequential() %>%
   # Add layers to the model
   layer_dense(units = 32, activation = 'relu', input_shape = c(2)) %>%
   layer_dense(units = 32, activation = 'relu') %>%
-  layer_dense(units = 16, activation = 'relu') %>%
   layer_dense(units = 1)
 
 # Compile the model
 model %>% compile(
   loss = 'mean_squared_error',
-  optimizer = optimizer_adam(),
+  optimizer = optimizer_adam(
+    learning_rate = 0.00001  # specify learning rate
+  ),
   metrics = c('mean_absolute_error')
 )
 
