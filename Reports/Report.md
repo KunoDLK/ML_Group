@@ -4,7 +4,7 @@
 
 - Mark Ditchburn
 - Andrea Butera
-- Kuno de Leeuw-Kent
+- Kuno de Leeuw-Kent (shortened to "Kuno.DLK" )
   
 ## Dataset:
 
@@ -66,3 +66,19 @@ testing <- AirbnbData[-train_indices, ]
 ```
 
 This has separated our data in to 34226 row for training and 14669 rows for testing 
+
+# Models:
+
+## Contents:
+
+- SVM (by Andrea Butera)
+- xxx (by Mark Ditchburn)
+- Deep Leaning (by Kuno.DLK)
+
+## SVM:
+
+## XXX:
+
+## Deep Learning:
+
+
