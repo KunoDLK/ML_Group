@@ -81,4 +81,48 @@ This has separated our data in to 34226 row for training and 14669 rows for test
 
 ## Deep Learning:
 
+### Data Preparation
+
+#### Introduction
+For this study, we utilized the popular `keras` library, which offers a high-level interface for building, training, and deploying deep learning models. Keras operates on top of TensorFlow, allowing for efficient and scalable backend operations. This library was chosen due to its flexibility, extensive documentation, and widespread adoption in the deep learning community. The data preparation process focused on standardizing the input features to ensure optimal model performance and minimizing potential biases.
+
+#### Location Data
+The dataset included location-specific information for rentable properties. This was represented using four columns:
+
+| Column                | Data Description                                                                 | Example                                |
+|-----------------------|----------------------------------------------------------------------------------|----------------------------------------|
+| `neighbourhood_group` | A categorical string representing the high-level geographic grouping (e.g., "Brooklyn"). | "Brooklyn", "Manhattan", "Manhattan"... |
+| `neighbourhood`       | A categorical string indicating the specific neighborhood (e.g., "Kensington"). | "Kensington", "Midtown", "Harlem"...   |
+| `latitude`            | A numerical value representing the latitude coordinate of the property.         | 40.6, 40.8, 40.8, 40.7, 40.8...        |
+| `longitude`           | A numerical value representing the longitude coordinate of the property.        | -74, -74, -73.9, -74, -73.9...         |
+
+
+#### Feature Selection
+To streamline the model and improve efficiency,the `neighbourhood` and `neighbourhood_group` columns were removed. These categorical features were deemed redundant given the availability of precise latitude and longitude coordinates. Latitude and longitude provide sufficient granularity to describe a property’s location accurately.
+
+However, using raw latitude and longitude coordinates presented challenges. The values had significant offsets (approximately 40 for latitude and -74 for longitude), which could hinder model convergence due to their large magnitude differences relative to other features.
+
+#### Normalization
+To address the disparity in magnitude, the latitude and longitude values were normalized to fall within a range of 0 to 1. This normalization process was performed as follows:
+- The minimum value of each coordinate was subtracted from the raw value.
+- The result was divided by the range (maximum value minus minimum value) for that coordinate.
+
+This transformation ensured that the westernmost location was represented as `0`, and the easternmost location was represented as `1`. While normalization improved model usability, it did not yield sufficient accuracy. The testing error remained approximately 10%, primarily due to the insufficient granularity of the normalized values.
+
+#### Challenges with Normalized Inputs
+A key limitation of using normalized latitude and longitude values as inputs was their inability to capture fine-grained locational differences. For instance, entire city blocks were represented by differences in normalized values on the order of ~0.0005. Such small differences were not prominent enough for the model to distinguish between adjacent locations effectively, leading to suboptimal predictions.
+
+#### Solution: Binary Encoding
+To overcome this limitation, binary encoding was employed as a preprocessing step for the location data. The normalized latitude and longitude values were multiplied by \(2^{16}\) (i.e., 65,536) to convert them into discrete integer values. These integers were then represented as 16-bit binary values.
+
+This approach provided several advantages:
+1. **Increased Granularity:** Each bit in the binary representation corresponded to a discrete geographical area. With 16 bits for both latitude and longitude, the map was divided into approximately \(65,536 \times 65,536\) cells (~4.2 billion squares).
+2. **Feature Relevance:** The most significant bits captured coarse locational features (e.g., east vs. west), while less significant bits captured finer locational details.
+3. **Model Interpretability:** Each input feature (bit) had a clear spatial interpretation, making it easier for the model to learn locational patterns.
+
+For example:
+- The most significant bit of the longitude indicated whether a property was located on the western or eastern half of the dataset.
+- Subsequent bits progressively divided the map into smaller regions, enabling precise locational differentiation.
+
+This binary encoding strategy significantly improved model accuracy by providing a more expressive representation of location data.
 
