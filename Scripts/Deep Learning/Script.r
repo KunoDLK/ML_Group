@@ -92,36 +92,6 @@ print(str(testing_set))
 
 # ===============================================================================
 
-
-# ================================ Normalize Latitude and Longitude ==============================
-
-# Offset by minimum and normalize using range.
-min_latitude <- min(training_set$latitude)
-min_longitude <- min(training_set$longitude)
-
-training_set$latitude <- training_set$latitude - min_latitude
-training_set$longitude <- training_set$longitude - min_longitude
-
-testing_set$latitude <- testing_set$latitude - min_latitude
-testing_set$longitude <- testing_set$longitude - min_longitude
-
-# Normalize to a range of [0, 1]
-lat_range <- max(training_set$latitude) - min(training_set$latitude)
-long_range <- max(training_set$longitude) - min(training_set$longitude)
-
-training_set$latitude <- training_set$latitude / lat_range
-training_set$longitude <- training_set$longitude / long_range
-
-testing_set$latitude <- testing_set$latitude / lat_range
-testing_set$longitude <- testing_set$longitude / long_range
-
-
-print(dim(training_set))
-print(str(training_set))
-print(dim(testing_set))
-print(str(testing_set))
-# =================================================================================================
-
 # ================================ Encoding ================================================
 
 library(keras)
@@ -144,6 +114,10 @@ price_max <- max(training_set$price)
 # Normalize the price based on the training set min/max
 training_set$price <- (training_set$price - price_min) / (price_max - price_min)
 testing_set$price <- (testing_set$price - price_min) / (price_max - price_min)
+
+# Apply log transformation to the price
+training_set$price <- log1p(training_set$price)
+testing_set$price <- log1p(testing_set$price)
 
 print(dim(training_set))
 print(str(training_set))
@@ -196,8 +170,10 @@ library(keras)
 model <- keras_model_sequential() %>%
   # Add layers to the model
   layer_dense(units = 32, activation = 'relu', input_shape = c(32)) %>% # Now input is 32 (16 + 16 for lat and long)
-  layer_dense(units = 32, activation = 'relu') %>%
-  layer_dense(units = 1)
+  layer_dense(units = 64, activation = 'relu') %>%
+  layer_dense(units = 64, activation = 'relu') %>%
+  layer_dense(units = 64, activation = 'relu') %>%
+  layer_dense(units = 1, activation = 'relu')
 
 # Compile the model
 model %>% compile(
@@ -233,8 +209,8 @@ predictions <- model %>% predict(testing_inputs)
 library(ggplot2)
 
 # Predictions need to be denormalized to match original price scale
-denormalized_predictions <- predictions * (price_max - price_min) + price_min
-denormalized_test_values <- testing_set$price * (price_max - price_min) + price_min
+denormalized_predictions <- expm1(predictions * (log1p(price_max) - log1p(price_min)) + log1p(price_min)
+denormalized_test_values <- expm1(testing_set$price  * (log1p(price_max) - log1p(price_min)) + log1p(price_min)
 
 # ================================ Output graph  ===============================================
 
