@@ -203,7 +203,7 @@ model <- keras_model_sequential() %>%
 model %>% compile(
   loss = 'mean_squared_error',
   optimizer = optimizer_adam(
-    learning_rate = 0.00001 # Specify learning rate
+    learning_rate = 0.0001 # Specify learning rate
   ),
   metrics = c('mean_absolute_error')
 )
@@ -213,7 +213,7 @@ history <- model %>% fit(
   training_inputs,                      # Input features (binary-encoded latitude and longitude)
   training_set$price,                   # Target variable
   epochs = 50,
-  batch_size = 32,
+  batch_size = 64,
   validation_split = 0.1
 )
 
@@ -236,33 +236,26 @@ library(ggplot2)
 denormalized_predictions <- predictions * (price_max - price_min) + price_min
 denormalized_test_values <- testing_set$price * (price_max - price_min) + price_min
 
-# Calculate the absolute errors
-absolute_errors <- abs(denormalized_predictions - denormalized_test_values)
+# ================================ Output graph  ===============================================
 
-head(denormalized_predictions)
-head(denormalized_test_values)
-head(absolute_errors)
+# Load ggplot2 library
+library(ggplot2)
 
-# Calculate minimum, maximum, and average absolute error
-min_error <- min(absolute_errors)
-max_error <- max(absolute_errors)
-avg_error <- median(absolute_errors)
-
-# Print the error statistics
-cat("Minimum Absolute Error:", min_error, "\n")
-cat("Maximum Absolute Error:", max_error, "\n")
-cat("Median Absolute Error:", avg_error, "\n")
+# Assuming 'denormalized_predictions' and 'denormalized_test_values' are already calculated
 
 # Create a data frame for plotting
-error_data <- data.frame(Actual_Price = denormalized_test_values,
-                         Predictions = denormalized_predictions, 
-                         Absolute_Error = absolute_errors)
+plot_data <- data.frame(
+  Predicted = denormalized_predictions,
+  Expected = denormalized_test_values
+)
 
-# Plot the absolute errors
-ggplot(error_data, aes(x = seq_along(Absolute_Error), y = Absolute_Error)) +
-  geom_line(color = "blue") +
-  labs(title = "Test Set Absolute Errors",
-       x = "Test Sample Index",
-       y = "Absolute Error") +
-  theme_minimal()
-
+# Create the scatter plot
+ggplot(plot_data, aes(x = Expected, y = Predicted)) +
+  geom_point(color = "blue", alpha = 0.6) + # Scatter points
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") + # y=x line
+  labs(
+    title = "Predicted vs Expected",
+    x = "Expected (Actual Prices)",
+    y = "Predicted Prices"
+  ) +
+  theme_minimal() # Apply a clean theme
