@@ -102,7 +102,7 @@ ggplot(airbnb_data, aes(x = price)) +
   theme_minimal() +
   labs(title = "Distribution of Price", x = "Price", y = "Count")
 
-# Log-transform price (if necessary) to handle skewness
+# Log-transform price to handle skewness
 ggplot(airbnb_data, aes(x = log1p(price))) +
   geom_histogram(bins = 30, fill = "green", color = "white") +
   theme_minimal() +
@@ -110,19 +110,25 @@ ggplot(airbnb_data, aes(x = log1p(price))) +
 
 # Add a new column for log-transformed price
 airbnb_data$log_price <- log1p(airbnb_data$price)
-
+```
+![Log-Transformed Price Distribution](Images/MD_LogTransformDistributionOfPrice.png)
+```
 # Boxplot of price by neighbourhood_group
 ggplot(airbnb_data, aes(x = neighbourhood_group, y = price)) +
   geom_boxplot(fill = "orange") +
   theme_minimal() +
   labs(title = "Price by Neighbourhood Group", x = "Neighbourhood Group", y = "Price")
-
+```
+![Log-Transformed Price Distribution](Images/MD_PriceByNeighbourhood.png)
+```
 # Boxplot of price by room_type
 ggplot(airbnb_data, aes(x = room_type, y = price)) +
   geom_boxplot(fill = "purple") +
   theme_minimal() +
   labs(title = "Price by Room Type", x = "Room Type", y = "Price")
-
+```
+![Log-Transformed Price Distribution](Images/MD_PriceByRoomType.png)
+```
 #--------------------Prepare Data for Model-------------------------------------
 
 # Label encode categorical variables for modeling
