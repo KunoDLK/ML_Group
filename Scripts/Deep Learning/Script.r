@@ -209,8 +209,12 @@ predictions <- model %>% predict(testing_inputs)
 library(ggplot2)
 
 # Predictions need to be denormalized to match original price scale
-denormalized_predictions <- expm1(predictions * (log1p(price_max) - log1p(price_min)) + log1p(price_min)
-denormalized_test_values <- expm1(testing_set$price  * (log1p(price_max) - log1p(price_min)) + log1p(price_min)
+denormalized_predictions <- expm1(predictions * (log1p(price_max) - log1p(price_min)) + log1p(price_min))
+denormalized_test_values <- expm1(testing_set$price  * (log1p(price_max) - log1p(price_min)) + log1p(price_min))
+
+denormalized_predictions <- predictions * (price_max - price_min) + price_min
+denormalized_test_values <- testing_set$price * (price_max - price_min) + price_min
+
 
 # ================================ Output graph  ===============================================
 
@@ -235,3 +239,4 @@ ggplot(plot_data, aes(x = Expected, y = Predicted)) +
     y = "Predicted Prices"
   ) +
   theme_minimal() # Apply a clean theme
+
