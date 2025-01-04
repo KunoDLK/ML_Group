@@ -19,7 +19,7 @@ This is how you add [links](https://www.youtube.com/watch?v=dQw4w9WgXcQ):
 
 
 ## SVM (by Andrea Butera)
-## Random Forest (by Mark Ditchburn)
+## Random Forest (by Mark Ditchburn C2932952)
 ### Summary:
 - Data is processed and used to trained a Random Forest Model
 - Determined key factors in price determination
