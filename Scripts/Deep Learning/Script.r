@@ -227,7 +227,7 @@ evaluation <- model %>% evaluate(
 print(evaluation)
 
 # You can predict the testing set using the trained model
-predictions <- model %>% predict(as.matrix(testing_set[, c("latitude", "longitude")]))
+predictions <- model %>% predict(testing_inputs)
 
 # Load necessary library for plotting
 library(ggplot2)
