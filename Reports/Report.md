@@ -42,7 +42,6 @@ head(airbnb_data)      # Preview the first few rows
 ```
 ![Price Distribution](Images/MD_DistributionOfPrice.png)
 ```
-```
 'data.frame':	48895 obs. of  16 variables:
  $ id                            : int  2539 2595 3647 3831 5022 5099 5121 5178 5203 5238 ...
  $ name                          : chr  "Clean & quiet apt home by the park" "Skylit Midtown Castle" "THE VILLAGE OF HARLEM....NEW YORK !" "Cozy Entire Floor of Brownstone" ...
@@ -60,7 +59,7 @@ head(airbnb_data)      # Preview the first few rows
  $ reviews_per_month             : num  0.21 0.38 NA 4.64 0.1 0.59 0.4 3.47 0.99 1.33 ...
  $ calculated_host_listings_count: int  6 2 1 1 1 1 1 1 1 4 ...
  $ availability_365              : int  365 355 365 194 0 129 0 220 0 188 ...
-```
+
 # Count rows with missing or zero price before filtering is applied
 rows_with_missing_or_zero_price <- airbnb_data %>%
   filter(is.na(price) | price == 0) %>%
