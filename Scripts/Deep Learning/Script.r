@@ -149,6 +149,42 @@ print(dim(training_set))
 print(str(training_set))
 print(dim(testing_set))
 print(str(testing_set))
+
+# =================================================================================================
+
+
+# ================================ Binary Encoding ================================================
+
+# Function to convert a normalized value (0-1) to a 16-bit binary vector
+normalized_to_binary_vector <- function(value) {
+  # Ensure the value is within the normalized range of 0 to 1
+  if (value < 0 || value > 1) {
+    stop("Value must be between 0 and 1")
+  }
+  
+  # Scale the value to a 16-bit integer
+  int_value <- as.integer(value * 65535)
+  
+  # Convert the integer to a binary string
+  binary_string <- intToBits(int_value)[1:16] # Extract the first 16 bits
+  
+  # Convert the binary string to a numeric vector (0s and 1s)
+  binary_vector <- as.numeric(rev(binary_string)) # Reverse the bits to get the correct order
+  
+  return(binary_vector)
+}
+
+# Apply the binary encoding to latitude and longitude for both training and testing sets
+training_lat_binary <- t(apply(as.matrix(training_set$latitude), 1, normalized_to_binary_vector))
+training_long_binary <- t(apply(as.matrix(training_set$longitude), 1, normalized_to_binary_vector))
+
+testing_lat_binary <- t(apply(as.matrix(testing_set$latitude), 1, normalized_to_binary_vector))
+testing_long_binary <- t(apply(as.matrix(testing_set$longitude), 1, normalized_to_binary_vector))
+
+# Combine the binary-encoded latitude and longitude into a single input matrix for the neural network
+training_inputs <- cbind(training_lat_binary, training_long_binary)
+testing_inputs <- cbind(testing_lat_binary, testing_long_binary)
+
 # =================================================================================================
 
 # ================================ Define the Model ===============================================
@@ -159,7 +195,7 @@ library(keras)
 # Define the neural network model
 model <- keras_model_sequential() %>%
   # Add layers to the model
-  layer_dense(units = 32, activation = 'relu', input_shape = c(2)) %>%
+  layer_dense(units = 32, activation = 'relu', input_shape = c(32)) %>% # Now input is 32 (16 + 16 for lat and long)
   layer_dense(units = 32, activation = 'relu') %>%
   layer_dense(units = 1)
 
@@ -167,15 +203,15 @@ model <- keras_model_sequential() %>%
 model %>% compile(
   loss = 'mean_squared_error',
   optimizer = optimizer_adam(
-    learning_rate = 0.00001  # specify learning rate
+    learning_rate = 0.00001 # Specify learning rate
   ),
   metrics = c('mean_absolute_error')
 )
 
 # Fit the model to the training data
 history <- model %>% fit(
-  as.matrix(training_set[, c("latitude", "longitude")]), # input features
-  training_set$price,                                  # target variable
+  training_inputs,                      # Input features (binary-encoded latitude and longitude)
+  training_set$price,                   # Target variable
   epochs = 50,
   batch_size = 32,
   validation_split = 0.1
@@ -183,8 +219,8 @@ history <- model %>% fit(
 
 # Evaluate the model's performance on the testing data
 evaluation <- model %>% evaluate(
-  as.matrix(testing_set[, c("latitude", "longitude")]),
-  testing_set$price
+  testing_inputs,                       # Input features for testing
+  testing_set$price                     # Target variable for testing
 )
 
 # Print the evaluation result
