@@ -30,7 +30,7 @@ This is how you add [links](https://www.youtube.com/watch?v=dQw4w9WgXcQ):
 #--------------------Data Clean-------------------------------------------
 
 # Load necessary libraries
-library(tidyverse)  # For data manipulation and visualization
+library(tidyverse)  # For data manipulation and visualisation
 
 # Load the dataset
 airbnb_data <- read.csv("AB_NYC_2019.csv")
@@ -174,10 +174,10 @@ cat("RMSE:", rmse_value, "\n")
 r2_value <- cor(test_data$log_price, test_predictions)^2
 cat("R²:", r2_value, "\n")
 
-# Feature importance visualization
+# Feature importance visualisation
 varImpPlot(rf_model)
 
-#----------------------Visualize Predictions---------------------------------------
+#----------------------Visualise Predictions---------------------------------------
 
 # Back-transform log_price predictions to actual price scale
 test_actual_price <- exp(test_data$log_price) - 1
@@ -194,7 +194,7 @@ ggplot(comparison_df, aes(x = Actual, y = Predicted)) +
 ```
 ![Predicted vsActual Prices](Images/MD_PredictedVsActualPrices.png)
 ```r
-# Residual plot to visualize prediction errors
+# Residual plot to visualise prediction errors
 residuals <- test_actual_price - test_predicted_price
 
 ggplot(data.frame(Actual = test_actual_price, Residuals = residuals), aes(x = Actual, y = Residuals)) +
