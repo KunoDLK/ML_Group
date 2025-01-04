@@ -21,8 +21,9 @@ This is how you add [links](https://www.youtube.com/watch?v=dQw4w9WgXcQ):
 ## SVM (by Andrea Butera)
 ## Random Forest (by Mark Ditchburn C2932952)
 ### Summary:
-- Data is processed and used to trained a Random Forest Model
-- Determined key factors in price determination
+- Data is evaluated and processed
+- Determination of key factors in price prediction
+- Model trained and evaluated against actual prices
 - Model is accurate to an R2 of 99.7%
 
 ## R Script
