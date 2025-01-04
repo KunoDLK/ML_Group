@@ -5,23 +5,6 @@ AirbnbData <- read.csv("DataSet/AB_NYC_2019.csv")
 
 str(AirbnbData)
 
-# Load necessary library
-library(dplyr)
-
-# Determine the most popular room type
-most_popular_room_type <- AirbnbData %>%
-  group_by(room_type) %>%
-  summarize(count = n()) %>%
-  arrange(desc(count)) %>%
-  slice(1) %>%
-  pull(room_type)
-
-# Filter the data by the most popular room type
-AirbnbData <- AirbnbData %>%
-  filter(room_type == most_popular_room_type)
-
-# Display the structure of the filtered data
-str(AirbnbData)
 
 # ===============================================================================
 
@@ -74,7 +57,7 @@ library(caret)
 
 
 # Select only necessary columns
-features <- c("latitude", "longitude")
+features <- c("latitude", "longitude", "room_type", "minimum_nights", "number_of_reviews", "availability_365")
 
 training_set <- training[, c(features, "price")]
 testing_set <- testing[, c(features, "price")]
@@ -83,8 +66,11 @@ testing_set <- testing[, c(features, "price")]
 training_set <- na.omit(training_set)
 testing_set <- na.omit(testing_set)
 
-# Verify the dimensions and structure after cleanup
+# Filter for items with a price under 1000
+training_set <- training_set[training_set$price < 1000, ]
+testing_set <- testing_set[testing_set$price < 1000, ]
 
+# Verify the dimensions and structure after cleanup
 print(dim(training_set))
 print(str(training_set))
 print(dim(testing_set))
@@ -114,10 +100,6 @@ price_max <- max(training_set$price)
 # Normalize the price based on the training set min/max
 training_set$price <- (training_set$price - price_min) / (price_max - price_min)
 testing_set$price <- (testing_set$price - price_min) / (price_max - price_min)
-
-# Apply log transformation to the price
-training_set$price <- log1p(training_set$price)
-testing_set$price <- log1p(testing_set$price)
 
 print(dim(training_set))
 print(str(training_set))
@@ -155,31 +137,84 @@ training_long_binary <- t(apply(as.matrix(training_set$longitude), 1, normalized
 testing_lat_binary <- t(apply(as.matrix(testing_set$latitude), 1, normalized_to_binary_vector))
 testing_long_binary <- t(apply(as.matrix(testing_set$longitude), 1, normalized_to_binary_vector))
 
-# Combine the binary-encoded latitude and longitude into a single input matrix for the neural network
-training_inputs <- cbind(training_lat_binary, training_long_binary)
-testing_inputs <- cbind(testing_lat_binary, testing_long_binary)
-
 # =================================================================================================
 
-# ================================ Define the Model ===============================================
+# ================================ Encoding Additional Features ===============================
+
+# Normalize numerical variables
+training_set$minimum_nights <- normalize(training_set$minimum_nights)
+training_set$number_of_reviews <- normalize(training_set$number_of_reviews)
+training_set$availability_365 <- normalize(training_set$availability_365)
+
+testing_set$minimum_nights <- normalize(testing_set$minimum_nights)
+testing_set$number_of_reviews <- normalize(testing_set$number_of_reviews)
+testing_set$availability_365 <- normalize(testing_set$availability_365)
+
+print(str(training_set))
+
+# One-hot encode the room_type feature using model.matrix
+# This automatically creates dummy variables for each category
+training_room_type_one_hot <- model.matrix(~ room_type - 1, data = training_set)  # `-1` removes the intercept
+head(training_room_type_one_hot)
+testing_room_type_one_hot <- model.matrix(~ room_type - 1, data = testing_set)
+
+# Binary encode normalized numerical features (minimum_nights, number_of_reviews, availability_365)
+training_min_nights_binary <- t(apply(as.matrix(training_set$minimum_nights), 1, normalized_to_binary_vector))
+head(training_min_nights_binary)
+training_num_reviews_binary <- t(apply(as.matrix(training_set$number_of_reviews), 1, normalized_to_binary_vector))
+head(training_num_reviews_binary)
+training_avail_binary <- t(apply(as.matrix(training_set$availability_365), 1, normalized_to_binary_vector))
+head(training_num_reviews_binary)
+testing_min_nights_binary <- t(apply(as.matrix(testing_set$minimum_nights), 1, normalized_to_binary_vector))
+testing_num_reviews_binary <- t(apply(as.matrix(testing_set$number_of_reviews), 1, normalized_to_binary_vector))
+testing_avail_binary <- t(apply(as.matrix(testing_set$availability_365), 1, normalized_to_binary_vector))
+
+# Combine all features into a single training and testing input matrix
+training_inputs <- cbind(
+  training_lat_binary,                 # Binary-encoded latitude
+  training_long_binary,                # Binary-encoded longitude
+  training_room_type_one_hot,          # One-hot encoded room type
+  training_min_nights_binary,          # Binary-encoded minimum nights
+  training_num_reviews_binary,         # Binary-encoded number of reviews
+  training_avail_binary                # Binary-encoded availability (days per year)
+)
+
+testing_inputs <- cbind(
+  testing_lat_binary,                  # Binary-encoded latitude
+  testing_long_binary,                 # Binary-encoded longitude
+  testing_room_type_one_hot,           # One-hot encoded room type
+  testing_min_nights_binary,           # Binary-encoded minimum nights
+  testing_num_reviews_binary,          # Binary-encoded number of reviews
+  testing_avail_binary                 # Binary-encoded availability (days per year)
+)
+
+print(str(training_inputs))
+print(str(testing_inputs))
+
+# Update input shape in model definition to match the new input size
+input_size <- ncol(training_inputs)
 
 # Load necessary libraries
 library(keras)
 
-# Define the neural network model
+# Define the neural network model with updated input size
 model <- keras_model_sequential() %>%
-  # Add layers to the model
-  layer_dense(units = 32, activation = 'relu', input_shape = c(32)) %>% # Now input is 32 (16 + 16 for lat and long)
-  layer_dense(units = 64, activation = 'relu') %>%
-  layer_dense(units = 64, activation = 'relu') %>%
-  layer_dense(units = 64, activation = 'relu') %>%
+  layer_dense(units = input_size, activation = 'relu', input_shape = c(input_size)) %>%
+  layer_dense(units = 512, activation = 'relu') %>%
+  layer_dense(units = 512, activation = 'relu') %>%
+  layer_dense(units = 1024, activation = 'relu') %>%
+  layer_dense(units = 1024, activation = 'relu') %>%
+  layer_dense(units = 1024, activation = 'relu') %>%
+  layer_dense(units = 1024, activation = 'relu') %>%
+  layer_dense(units = 512, activation = 'relu') %>%
+  layer_dense(units = 512, activation = 'relu') %>%
   layer_dense(units = 1, activation = 'relu')
 
 # Compile the model
 model %>% compile(
   loss = 'mean_squared_error',
   optimizer = optimizer_adam(
-    learning_rate = 0.0001 # Specify learning rate
+    learning_rate = 0.00001 # Specify learning rate
   ),
   metrics = c('mean_absolute_error')
 )
@@ -188,9 +223,9 @@ model %>% compile(
 history <- model %>% fit(
   training_inputs,                      # Input features (binary-encoded latitude and longitude)
   training_set$price,                   # Target variable
-  epochs = 50,
+  epochs = 10,
   batch_size = 64,
-  validation_split = 0.1
+  validation_split = 0.005
 )
 
 # Evaluate the model's performance on the testing data
@@ -209,9 +244,6 @@ predictions <- model %>% predict(testing_inputs)
 library(ggplot2)
 
 # Predictions need to be denormalized to match original price scale
-denormalized_predictions <- expm1(predictions * (log1p(price_max) - log1p(price_min)) + log1p(price_min))
-denormalized_test_values <- expm1(testing_set$price  * (log1p(price_max) - log1p(price_min)) + log1p(price_min))
-
 denormalized_predictions <- predictions * (price_max - price_min) + price_min
 denormalized_test_values <- testing_set$price * (price_max - price_min) + price_min
 
