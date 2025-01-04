@@ -39,7 +39,10 @@ airbnb_data <- read.csv("AB_NYC_2019.csv")
 str(airbnb_data)       # Check structure of the dataset
 summary(airbnb_data)   # Summary statistics of the dataset
 head(airbnb_data)      # Preview the first few rows
+```
+![Price Distribution](Images/MD_DistributionOfPrice.png)
 
+```
 # Count rows with missing or zero price before filtering is applied
 rows_with_missing_or_zero_price <- airbnb_data %>%
   filter(is.na(price) | price == 0) %>%
