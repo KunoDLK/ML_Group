@@ -72,7 +72,9 @@ ggplot(data, aes(x = price)) +
   geom_histogram(binwidth = 50, fill = "blue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Prices", x = "Price", y = "Frequency") +
   theme_minimal()
-
+```
+![Distribution](Images/PricesDistribution.png)
+```r
 results <- data.frame(Actual = dataTest$price, Predicted = predictions)
 
 # Plot Actual vs Predicted prices
@@ -81,7 +83,9 @@ ggplot(results, aes(x = Actual, y = Predicted)) +
   geom_abline(slope = 1, intercept = 0, color = "red") +  
   labs(title = "Actual vs Predicted Prices", x = "Actual Prices", y = "Predicted Prices") +
   theme_minimal()
-
+```
+![Actual Vs Predicted](Images/ActualVsPredicted.png)
+```r
 results <- results %>%
   mutate(Residuals = Actual - Predicted)
 
@@ -91,7 +95,8 @@ ggplot(results, aes(x = Predicted, y = Residuals)) +
   geom_hline(yintercept = 0, color = "red") +  
   labs(title = "Residuals vs Predicted Prices", x = "Predicted Prices", y = "Residuals") +
   theme_minimal()
-
+```
+![Residual Vs Predicted](Images/ResidualVsPredicted.png)
 
 
   
