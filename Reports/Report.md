@@ -19,18 +19,19 @@ This is how you add [links](https://www.youtube.com/watch?v=dQw4w9WgXcQ):
 
 
 ## SVM (by Andrea Butera)
-## Random Forest (by Mark Ditchburn)
+## Random Forest (by Mark Ditchburn C2932952)
 ### Summary:
-- Data is processed and used to trained a Random Forest Model
-- Determined key factors in price determination
+- Data is evaluated and processed
+- Determination of key factors in price prediction
+- Model trained and evaluated against actual prices
 - Model is accurate to an R2 of 99.7%
 
 ## R Script
-```R
+```r
 #--------------------Data Clean-------------------------------------------
 
 # Load necessary libraries
-library(tidyverse)  # For data manipulation and visualization
+library(tidyverse)  # For data manipulation and visualisation
 
 # Load the dataset
 airbnb_data <- read.csv("AB_NYC_2019.csv")
@@ -39,10 +40,7 @@ airbnb_data <- read.csv("AB_NYC_2019.csv")
 str(airbnb_data)       # Check structure of the dataset
 summary(airbnb_data)   # Summary statistics of the dataset
 head(airbnb_data)      # Preview the first few rows
-```
-![Price Distribution](Images/MD_DistributionOfPrice.png)
 
-```
 # Count rows with missing or zero price before filtering is applied
 rows_with_missing_or_zero_price <- airbnb_data %>%
   filter(is.na(price) | price == 0) %>%
@@ -101,7 +99,9 @@ ggplot(airbnb_data, aes(x = price)) +
   geom_histogram(bins = 30, fill = "blue", color = "white") +
   theme_minimal() +
   labs(title = "Distribution of Price", x = "Price", y = "Count")
-
+```
+![Price Distribution](Images/MD_DistributionOfPrice.png)
+```r
 # Log-transform price to handle skewness
 ggplot(airbnb_data, aes(x = log1p(price))) +
   geom_histogram(bins = 30, fill = "green", color = "white") +
@@ -112,23 +112,23 @@ ggplot(airbnb_data, aes(x = log1p(price))) +
 airbnb_data$log_price <- log1p(airbnb_data$price)
 ```
 ![Log-Transformed Price Distribution](Images/MD_LogTransformDistributionOfPrice.png)
-```
+```r
 # Boxplot of price by neighbourhood_group
 ggplot(airbnb_data, aes(x = neighbourhood_group, y = price)) +
   geom_boxplot(fill = "orange") +
   theme_minimal() +
   labs(title = "Price by Neighbourhood Group", x = "Neighbourhood Group", y = "Price")
 ```
-![Log-Transformed Price Distribution](Images/MD_PriceByNeighbourhood.png)
-```
+![Price by Neighborhood](Images/MD_PriceByNeighbourhood.png)
+```r
 # Boxplot of price by room_type
 ggplot(airbnb_data, aes(x = room_type, y = price)) +
   geom_boxplot(fill = "purple") +
   theme_minimal() +
   labs(title = "Price by Room Type", x = "Room Type", y = "Price")
 ```
-![Log-Transformed Price Distribution](Images/MD_PriceByRoomType.png)
-```
+![Price byRoom](Images/MD_PriceByRoomType.png)
+```r
 #--------------------Prepare Data for Model-------------------------------------
 
 # Label encode categorical variables for modeling
@@ -173,10 +173,10 @@ cat("RMSE:", rmse_value, "\n")
 r2_value <- cor(test_data$log_price, test_predictions)^2
 cat("R²:", r2_value, "\n")
 
-# Feature importance visualization
+# Feature importance visualisation
 varImpPlot(rf_model)
 
-#----------------------Visualize Predictions---------------------------------------
+#----------------------Visualise Predictions---------------------------------------
 
 # Back-transform log_price predictions to actual price scale
 test_actual_price <- exp(test_data$log_price) - 1
@@ -190,8 +190,10 @@ ggplot(comparison_df, aes(x = Actual, y = Predicted)) +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   theme_minimal() +
   labs(title = "Predicted vs. Actual Prices", x = "Actual Price", y = "Predicted Price")
-
-# Residual plot to visualize prediction errors
+```
+![Predicted vsActual Prices](Images/MD_PredictedVsActualPrices.png)
+```r
+# Residual plot to visualise prediction errors
 residuals <- test_actual_price - test_predicted_price
 
 ggplot(data.frame(Actual = test_actual_price, Residuals = residuals), aes(x = Actual, y = Residuals)) +
@@ -199,7 +201,9 @@ ggplot(data.frame(Actual = test_actual_price, Residuals = residuals), aes(x = Ac
   geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
   theme_minimal() +
   labs(title = "Residuals vs. Actual Prices", x = "Actual Price", y = "Residuals (Actual - Predicted)")
-
+```
+![Residuals vs. Actual Prices](Images/MD_ResidualsVsActualPrices.png)
+```r
 # Combine into a data frame
 comparison_df <- data.frame(
   Actual_Price = test_actual_price,
@@ -222,9 +226,8 @@ ggplot(sample_comparison, aes(x = Actual_Price, y = Predicted_Price)) +
     x = "Actual Price",
     y = "Predicted Price"
   )
-
-
 ```
+![Sample Comparison: Predicted vs. Actual Prices](Images/MD_SampleComparisonPredictedVsActualPrices.png)
 ## Deep Leaning (by Kuno.DLK):
 
 ### Summary:
