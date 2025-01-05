@@ -19,6 +19,82 @@ This is how you add [links](https://www.youtube.com/watch?v=dQw4w9WgXcQ):
 
 
 ## SVM (by Andrea Butera)
+### Summary:
+- Data is prepared and processed
+- Data is split in training an testing partitions
+- Model is trained by comparing neighborhood and prices
+- Plots are created to show accuracy
+
+## R Script
+```r
+#--------------------Data Preparation-------------------------------------------
+# Load Libraries
+library(e1071)
+library(dplyr)  
+library(caret)  
+library(ggplot2)
+
+data <- read.csv("C:/Users/buter/Documents/DataSet/AB_NYC_2019.csv")
+
+# Factorize neighbourhood column
+data$neighbourhood <- as.factor(data$neighbourhood)
+
+
+data <- data %>% select(price, neighbourhood)
+
+# Omit Empty rows
+data <- na.omit(data)
+
+# Create training and testing partition
+set.seed(25)  
+trainIndex <- createDataPartition(data$price, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+dataTrain <- data[trainIndex, ]
+dataTest <- data[-trainIndex, ]
+
+# Train data model
+svm_model <- svm(price ~ neighbourhood, data = dataTrain, type = 'eps-regression')
+
+
+predictions <- predict(svm_model, dataTest)
+
+# Calculate MAE and R2
+mae <- mean(abs(predictions - dataTest$price))
+rmse <- sqrt(mean((predictions - dataTest$price)^2))
+
+# Display MAE and R2
+cat("Mean Absolute Error:", mae, "\n")
+cat("Root Mean Squared Error:", rmse, "\n")
+
+#Plot Prices Distibution
+ggplot(data, aes(x = price)) +
+  geom_histogram(binwidth = 50, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Prices", x = "Price", y = "Frequency") +
+  theme_minimal()
+
+results <- data.frame(Actual = dataTest$price, Predicted = predictions)
+
+# Plot Actual vs Predicted prices
+ggplot(results, aes(x = Actual, y = Predicted)) +
+  geom_point(color = "blue", alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +  
+  labs(title = "Actual vs Predicted Prices", x = "Actual Prices", y = "Predicted Prices") +
+  theme_minimal()
+
+results <- results %>%
+  mutate(Residuals = Actual - Predicted)
+
+# Plot Residual vs Predicted Prices
+ggplot(results, aes(x = Predicted, y = Residuals)) +
+  geom_point(color = "blue", alpha = 0.5) +
+  geom_hline(yintercept = 0, color = "red") +  
+  labs(title = "Residuals vs Predicted Prices", x = "Predicted Prices", y = "Residuals") +
+  theme_minimal()
+
+
+
+  
 ## Random Forest (by Mark Ditchburn C2932952)
 ### Summary:
 - Data is evaluated and processed
